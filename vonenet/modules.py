@@ -66,7 +66,7 @@ class VOneBlock(nn.Module):
         self.simple_conv_q1.initialize(sf=self.sf, theta=self.theta, sigx=self.sigx, sigy=self.sigy,
                                        phase=self.phase + np.pi / 2)
 
-        self.simple = nn.ReLU(inplace=True)
+        self.simple = nn.ReLU(inplace=False)
         self.complex = Identity()
         self.gabors = Identity()
         self.noise = nn.ReLU(inplace=True)

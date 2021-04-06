@@ -178,7 +178,7 @@ class VOneNetTrainer(object):
                 g_loss.backward()
                 self.g_optimizer.step()
 
-                # Train Discrriminator
+                # Train Discriminator
                 self.d_optimizer.zero_grad()
 
                 # Loss for real images

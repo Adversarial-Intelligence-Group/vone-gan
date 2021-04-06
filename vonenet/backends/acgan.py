@@ -54,7 +54,7 @@ class Discriminator(nn.Module):
             return block
 
         self.conv_blocks = nn.Sequential(
-            *discriminator_block(channels, 16, bn=False),
+            # *discriminator_block(channels, 16, bn=False),
             *discriminator_block(16, 32),
             *discriminator_block(32, 64),
             *discriminator_block(64, 128),
