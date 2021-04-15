@@ -82,7 +82,7 @@ def train():
     if FLAGS.ngpus > 0 and device_count() > 1:
         print('Running on multiple GPUs')
         generator = nn.DataParallel(generator, list(range(FLAGS.ngpus)))
-        discriminator = nn.DataParallel(generator, list(range(FLAGS.ngpus)))
+        discriminator = nn.DataParallel(discriminator, list(range(FLAGS.ngpus)))
     elif FLAGS.ngpus > 0 and device_count() == 1:
         print('Running on single GPU')
         generator = generator.to(device)
