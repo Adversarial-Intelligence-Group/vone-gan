@@ -4,17 +4,17 @@ import pandas as pd
 parser = argparse.ArgumentParser(description='training')
 
 
-parser.add_argument('--n_epochs', default=200, type=int,
+parser.add_argument('--n_epochs', default=600, type=int,
                     help='number of epochs of training')
 parser.add_argument('--batch_size', default=128, type=int,
                     help='size of batch for training')
 parser.add_argument('--workers', default=2,
                     help='number of data loading workers')
-parser.add_argument('--ngpus', default=0, type=int,
+parser.add_argument('--ngpus', default=2, type=int,
                     help='number of GPUs to use; 0 if you want to run on CPU')
-parser.add_argument('--img_size', default=32, type=int,
+parser.add_argument('--img_size', default=64, type=int,
                     help='size of each image dimension')
-parser.add_argument('--channels', default=3, type=int,
+parser.add_argument('--channels', default=1, type=int,
                     help='number of image channels')
 parser.add_argument('--latent_dim', default=100, type=int,
                     help='dimensionality of the latent space')
@@ -26,6 +26,8 @@ parser.add_argument('--b1', default=0.5, type=float,
                     help='adam: decay of first order momentum of gradient')
 parser.add_argument('--b2', default=0.999, type=float,
                     help='adam: decay of first order momentum of gradient')
+parser.add_argument('--sample_interval', type=int, default=1000,
+                    help='interval between image sampling')
 
 FLAGS, FIRE_FLAGS = parser.parse_known_args()
 
@@ -51,30 +53,27 @@ def set_gpus(n=2):
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
-set_gpus(FLAGS.ngpus)
+# set_gpus(FLAGS.ngpus)
 
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torchvision.transforms as transforms
 from torchvision import datasets
-from torchvision.utils import save_image
+from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 import tqdm
 import numpy as np
 from vonenet import get_model
-from vonenet.backends.acgan import Generator, weights_init
 
 cuda = True if torch.cuda.is_available() else False
 device = torch.device('cuda' if cuda else 'cpu')
 
 
 def train():
-    discriminator = get_model(image_size=FLAGS.img_size, n_classes=FLAGS.n_classes,
-                              channels=FLAGS.channels)
-
-    generator = Generator(img_size=FLAGS.img_size, channels=FLAGS.channels,
-                          latent_dim=FLAGS.latent_dim, n_classes=FLAGS.n_classes)
+    discriminator, generator = get_model(image_size=FLAGS.img_size, n_classes=FLAGS.n_classes,
+                              channels=FLAGS.channels, latent_dim=FLAGS.latent_dim)
 
     if FLAGS.ngpus == 0:
         print('Running on CPU')
@@ -111,10 +110,10 @@ class VOneNetTrainer(object):
         self.data_loader = self.data()
 
     def data(self):
-        dataset = datasets.CIFAR10(
-                '../../data/cifar10',
+        dataset = datasets.MNIST(
+                './',
                 train=True,
-                download=True,
+                download=False,
                 transform=transforms.Compose([
                     transforms.Resize(FLAGS.img_size),
                     transforms.ToTensor(),
@@ -129,7 +128,7 @@ class VOneNetTrainer(object):
 
         return data_loader
 
-    def sample_image(self, n_row, batches_done):
+    def get_sample(self, n_row):
         """Saves a grid of generated digits ranging from 0 to n_classes"""
         FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
         LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
@@ -140,15 +139,20 @@ class VOneNetTrainer(object):
         labels = np.array([num for _ in range(n_row) for num in range(n_row)])
         labels = Variable(LongTensor(labels))
         gen_imgs = self.generator(z, labels)
-        save_image(gen_imgs.data, "images/%d.png" % batches_done, nrow=n_row, normalize=True)
+        return gen_imgs
 
     def __call__(self):
-        self.generator.apply(weights_init)
+        writer = SummaryWriter('logs/vone_acgan_experiment_2', max_queue=100)
 
         FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
         LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
 
         start = time.time()
+
+        d_losses = 0.0
+        g_losses = 0.0
+        accuracies = 0.0
+
         for epoch in range(FLAGS.n_epochs):
             for idx, (inp, target) in enumerate(tqdm.tqdm(self.data_loader, desc=self.name)):
                 target.to(device)
@@ -199,12 +203,25 @@ class VOneNetTrainer(object):
                 d_loss.backward()
                 self.d_optimizer.step()
 
+                d_losses += d_loss.item()
+                g_losses += g_loss.item()
+                accuracies += 100 * d_acc
+
                 print(
                     '[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %d%%] [G loss: %f]'
                     % (epoch, FLAGS.n_epochs, idx, len(self.data_loader), d_loss.item(), 100 * d_acc, g_loss.item())
                 )
+
                 batches_done = epoch * len(self.data_loader) + idx
-                self.sample_image(n_row=10, batches_done=batches_done)
+                if batches_done % FLAGS.sample_interval == 0:
+                    writer.add_scalar('train/loss/discriminator', d_losses / 1000, batches_done)
+                    writer.add_scalar('train/loss/generator', g_losses / 1000, batches_done)
+                    writer.add_scalar('train/accuracy', accuracies / 1000, batches_done)
+                    writer.add_image('train/samples', make_grid(self.get_sample(10), normalize=True), batches_done)
+
+                    d_losses = 0.0
+                    g_losses = 0.0
+                    accuracies = 0.0
 
             duration = (time.time() - start) / len(self.data_loader)
             print('[Epoch %d/%d] [Duration: %d]' % (epoch, FLAGS.n_epochs, duration))
