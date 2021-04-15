@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-def gabor_kernel(frequency,  sigma_x, sigma_y, theta=0, offset=0, ks=61):
+def gabor_kernel(frequency, sigma_x, sigma_y, theta=0, offset=0, ks=61):
 
     w = ks // 2
     grid_val = torch.arange(-w, w+1, dtype=torch.float)

@@ -2,14 +2,6 @@ import torch
 import torch.nn as nn
 
 
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm2d") != -1:
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
-        nn.init.constant_(m.bias.data, 0.0)
-
 class Generator(nn.Module):
     def __init__(self, n_classes, channels, latent_dim, img_size=224):
         super(Generator, self).__init__()
@@ -17,7 +9,8 @@ class Generator(nn.Module):
         self.label_emb = nn.Embedding(n_classes, latent_dim)
 
         self.init_size = img_size // 4  # Initial size before upsampling
-        self.l1 = nn.Sequential(nn.Linear(latent_dim, 128 * self.init_size ** 2))
+        self.l1 = nn.Sequential(
+            nn.Linear(latent_dim, 128 * self.init_size ** 2))
 
         self.conv_blocks = nn.Sequential(
             nn.BatchNorm2d(128),
@@ -48,7 +41,8 @@ class Discriminator(nn.Module):
 
         def discriminator_block(in_filters, out_filters, bn=True):
             """Returns layers of each discriminator block"""
-            block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(0.2, inplace=True), nn.Dropout2d(0.25)]
+            block = [nn.Conv2d(in_filters, out_filters, 3, 2, 1), nn.LeakyReLU(
+                0.2, inplace=True), nn.Dropout2d(0.25)]
             if bn:
                 block.append(nn.BatchNorm2d(out_filters, 0.8))
             return block
@@ -64,8 +58,10 @@ class Discriminator(nn.Module):
         ds_size = img_size // 2 ** 4
 
         # Output layers
-        self.adv_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
-        self.aux_layer = nn.Sequential(nn.Linear(128 * ds_size ** 2, n_classes), nn.Softmax())
+        self.adv_layer = nn.Sequential(
+            nn.Linear(128 * ds_size ** 2, 1), nn.Sigmoid())
+        self.aux_layer = nn.Sequential(
+            nn.Linear(128 * ds_size ** 2, n_classes), nn.Softmax())
         # self.apply(weights_init)
 
     def forward(self, img):
