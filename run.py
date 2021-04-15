@@ -81,8 +81,8 @@ def train():
         print('Running on CPU')
     if FLAGS.ngpus > 0 and device_count() > 1:
         print('Running on multiple GPUs')
-        generator = nn.DataParallel(generator, list(range(FLAGS.ngpus)))
-        discriminator = nn.DataParallel(discriminator, list(range(FLAGS.ngpus)))
+        generator = nn.DataParallel(generator, list(range(FLAGS.ngpus))).cuda()
+        discriminator = nn.DataParallel(discriminator, list(range(FLAGS.ngpus))).cuda()
     elif FLAGS.ngpus > 0 and device_count() == 1:
         print('Running on single GPU')
         generator = generator.to(device)
@@ -90,7 +90,7 @@ def train():
     else:
         print('No GPU detected!')
 
-    writer = SummaryWriter('logs/vone_acgan_experiment_2', max_queue=100)
+    writer = SummaryWriter(f'logs/vone_{FLAGS.model_arch}_experiment', max_queue=100)
     trainer = DCGANTrainer(discriminator, generator, device, lr=FLAGS.lr, b1=FLAGS.b1, img_size=FLAGS.img_size,
                            num_workers=FLAGS.workers, batch_size=FLAGS.batch_size, latent_dim=FLAGS.latent_dim)
 
@@ -99,7 +99,7 @@ def train():
 
     d_losses = 0.0
     g_losses = 0.0
-    accuracies = 0.0
+    # accuracies = 0.0
 
     start = time.time()
     for epoch in tqdm.trange(start_epoch, FLAGS.n_epochs + 1, initial=0, desc='epoch'):
@@ -108,8 +108,8 @@ def train():
             record = trainer(*data)
 
             d_losses += record['d_loss']
-            g_losses += record['d_loss']
-            accuracies += record['accuracy']
+            g_losses += record['g_loss']
+            # accuracies += record['accuracy']
 
             batches_done = epoch * len(data_loader_iter) + idx
 
@@ -118,14 +118,14 @@ def train():
                                   d_losses / 1000, batches_done)
                 writer.add_scalar('train/loss/generator',
                                   g_losses / 1000, batches_done)
-                writer.add_scalar('train/accuracy',
-                                  accuracies / 1000, batches_done)
+                # writer.add_scalar('train/accuracy',
+                #                   accuracies / 1000, batches_done)
                 writer.add_image(
                     'train/samples', make_grid(trainer.get_sample(), normalize=True), batches_done)
 
                 d_losses = 0.0
                 g_losses = 0.0
-                accuracies = 0.0
+                # accuracies = 0.0
 
         duration = (time.time() - start) / len(data_loader_iter)
         print('[Epoch %d/%d] [Duration: %d]' %
