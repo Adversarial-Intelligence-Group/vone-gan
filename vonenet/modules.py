@@ -41,7 +41,7 @@ class VOneBlock(nn.Module):
                  simple_channels=128, complex_channels=128, ksize=25, stride=4, input_size=224):
         super().__init__()
 
-        # self.in_channels = 3
+        # self.in_channels = 3 #FIXME
         self.in_channels = 1
 
         self.simple_channels = simple_channels

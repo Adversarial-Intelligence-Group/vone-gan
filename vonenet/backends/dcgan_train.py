@@ -61,12 +61,12 @@ class DCGANTrainer(object):
         self.discriminator.zero_grad()
 
         # Train Discriminator
-        real_input = inp.to(self.device)
-        b_size = real_input.size(0)
+        real_cpu = inp.to(self.device)
+        b_size = real_cpu.size(0)
         label = torch.full((b_size,), self.real_label,
                            dtype=torch.float, device=self.device)
 
-        output = self.discriminator(real_input).view(-1)
+        output = self.discriminator(real_cpu).view(-1)
         d_real_loss = self.criterion(output, label)
 
         d_real_loss.backward()
@@ -98,5 +98,3 @@ class DCGANTrainer(object):
         record['d_loss'] = d_loss.item()
         record['g_loss'] = g_loss.item()
         record['duration'] = time.time() - start
-
-        return record
