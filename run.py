@@ -157,11 +157,11 @@ def train():
 
         writer.add_image(
             'train/samples', make_grid(trainer.get_sample(), normalize=True), epoch)
-        if epoch % 1 == 0:# save model
-                torch.save(trainer.discriminator.state_dict(), f'./assets/models/dis_epoch_{epoch}.pth')
-                torch.save(trainer.generator.state_dict(), f'./assets/models//gen_epoch_{epoch}.pth')
-                torch.save(trainer.d_optimizer.state_dict(), f'./assets/models/d_opt_epoch_{epoch}.pth')
-                torch.save(trainer.g_optimizer.state_dict(), f'./assets/models//g_opt_epoch_{epoch}.pth')
+        # if epoch % 1 == 0:# save model
+        #         torch.save(trainer.discriminator.state_dict(), f'./assets/models/dis_epoch_{epoch}.pth')
+        #         torch.save(trainer.generator.state_dict(), f'./assets/models//gen_epoch_{epoch}.pth')
+        #         torch.save(trainer.d_optimizer.state_dict(), f'./assets/models/d_opt_epoch_{epoch}.pth')
+        #         torch.save(trainer.g_optimizer.state_dict(), f'./assets/models//g_opt_epoch_{epoch}.pth')
                 
         if (epoch + 1) % 50 == 0:# change step size
             trainer.update_optimizers()
