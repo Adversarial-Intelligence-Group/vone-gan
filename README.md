@@ -1,7 +1,7 @@
 # VOneNet-GAN: GANs with a Primary Visual Cortex Front-End
 
 Biologically-inspired Generative Neural Networks (GANs). VOneNets have the following features:
-- Fixed-weight neural network model of the primate primary visual cortex (V1) as the front-end.
+- Fixed-weight neural network model of the primate primary visual cortex (V1) as the front-end
 - Robust to image perturbations
 - Brain-mapped
 - Flexible: can be adapted to different Discriminator architectures
